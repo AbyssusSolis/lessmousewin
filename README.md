@@ -130,4 +130,4 @@ lessmousewin/
 
 ## 许可
 
-本仓库以根目录的 `LICENSE` 文件为准。原 macOS 项目 LessMouse 使用 MIT 许可；本移植保留原始项目的隐私承诺与设计语言。
+MIT License——详见根目录 `LICENSE` 文件。原 macOS 项目 LessMouse 同样使用 MIT 许可；本移植保留原始项目的隐私承诺与设计语言。
