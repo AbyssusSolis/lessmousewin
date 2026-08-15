@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AssemblyName>LessMouseWin</AssemblyName>
+    <RootNamespace>LessMouseWin</RootNamespace>
+    <ApplicationIcon>Assets\LessMouse.ico</ApplicationIcon>
+    <Version>1.0.0</Version>
+    <Product>LessMouseWin</Product>
+    <Description>Windows tray shortcut coach, ported from the macOS LessMouse project.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Localization\en.json" />
+    <EmbeddedResource Include="Localization\zh-Hans.json" />
+    <EmbeddedResource Include="Assets\LessMouse.ico" />
+    <EmbeddedResource Include="Assets\LessMouseUnread.ico" />
+  </ItemGroup>
+
+</Project>
