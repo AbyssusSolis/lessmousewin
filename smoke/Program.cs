@@ -18,12 +18,24 @@ internal static class Program
     [STAThread]
     private static int Main()
     {
+        var ok = true;
+        void Check(string name, bool condition)
+        {
+            Console.WriteLine($"{(condition ? "PASS" : "FAIL")} {name}");
+            if (!condition) ok = false;
+        }
+
         Loc.Initialize();
         Loc.Override = "en";
         Check("english localization", Loc.T("today.events") == "Key events");
         Loc.Override = "zh-Hans";
         Check("chinese localization", Loc.T("today.events") == "按键事件");
         Loc.Override = null;
+
+        Check("privacy sweep: bare/shift keys are navigation-only",
+            RunPrivacySweep(BareModifiers, requireNavigationOnly: true));
+        Check("privacy sweep: combos always have readable tokens",
+            RunPrivacySweep(ComboModifiers, requireNavigationOnly: false));
         var dir = Path.Combine(Path.GetTempPath(), "lm-smoke-" + Guid.NewGuid().ToString("N"));
         var dispatcher = Dispatcher.CurrentDispatcher;
         var settings = new SettingsStore(dir).Settings;
@@ -57,12 +69,6 @@ internal static class Program
         store.Flush();
 
         var today = store.TodaySnapshot();
-        var ok = true;
-        void Check(string name, bool condition)
-        {
-            Console.WriteLine($"{(condition ? "PASS" : "FAIL")} {name}");
-            if (!condition) ok = false;
-        }
 
         Check("backspaces counted", today.Combos.GetValueOrDefault("backspace") == 15);
         Check("bursts detected", today.Patterns.GetValueOrDefault("backspace-burst") >= 3);
@@ -92,6 +98,55 @@ internal static class Program
 
         Directory.Delete(dir, recursive: true);
         return ok ? 0 : 1;
+    }
+
+    private static readonly ModifierSet[] BareModifiers = [ModifierSet.None, ModifierSet.Shift];
+    private static readonly ModifierSet[] ComboModifiers =
+    [
+        ModifierSet.Ctrl,
+        ModifierSet.Alt,
+        ModifierSet.Win,
+        ModifierSet.Ctrl | ModifierSet.Shift,
+        ModifierSet.Alt | ModifierSet.Shift,
+        ModifierSet.Ctrl | ModifierSet.Alt | ModifierSet.Shift,
+    ];
+
+    /// <summary>
+    /// The privacy invariant from the macOS original, stated over the whole
+    /// Windows VK input space: every signature reachable with no Ctrl/Alt/Win
+    /// must name a navigation key, and every combination signature must have
+    /// a non-empty, whitespace-free token so stats.json stays auditable.
+    /// </summary>
+    private static bool RunPrivacySweep(IEnumerable<ModifierSet> modifiers, bool requireNavigationOnly)
+    {
+        var navigationTokens = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "backspace", "tab", "esc", "pageup", "pagedown", "end", "home",
+            "left", "up", "right", "down", "delete",
+            "f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12",
+        };
+
+        foreach (var modifier in modifiers)
+        for (var keyCode = 0; keyCode <= 0xFF; keyCode++)
+        {
+            var signature = KeySignatureFilter.Signature(new KeyEvent
+            {
+                Timestamp = 1,
+                KeyCode = (ushort)keyCode,
+                Modifiers = modifier,
+                Application = "privacy-sweep",
+            });
+
+            if (signature is null) continue;
+
+            if (requireNavigationOnly && !navigationTokens.Contains(signature.Key.Token))
+                return false;
+
+            if (string.IsNullOrWhiteSpace(signature.Key.Token))
+                return false;
+        }
+
+        return true;
     }
 
     private static Size Measure(FrameworkElement element)
