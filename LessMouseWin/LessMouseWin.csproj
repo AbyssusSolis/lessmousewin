@@ -10,7 +10,7 @@
     <AssemblyName>LessMouseWin</AssemblyName>
     <RootNamespace>LessMouseWin</RootNamespace>
     <ApplicationIcon>Assets\LessMouse.ico</ApplicationIcon>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Product>LessMouseWin</Product>
     <Description>Windows tray shortcut coach, ported from the macOS LessMouse project.</Description>
   </PropertyGroup>
