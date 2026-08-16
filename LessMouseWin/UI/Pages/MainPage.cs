@@ -24,6 +24,7 @@ internal sealed class MainPage : IPage
     private readonly Ellipse _dotCore;
     private readonly Ellipse _dotHalo;
     private bool _pulsing;
+    private bool _windowVisible;
     private readonly StackPanel _root;
     private readonly Border _celebrationModule;
     private readonly TextBlock _celebrationTitle;
@@ -239,9 +240,15 @@ internal sealed class MainPage : IPage
     /// The status dot breathes while the hook is listening — a slow opacity
     /// pulse, stopped the moment tracking pauses or animations are off.
     /// </summary>
+    public void OnWindowVisibilityChanged(bool visible)
+    {
+        _windowVisible = visible;
+        UpdatePulse(_state.Phase);
+    }
+
     private void UpdatePulse(TrackingPhase phase)
     {
-        if (phase == TrackingPhase.Tracking && SystemParameters.ClientAreaAnimation)
+        if (phase == TrackingPhase.Tracking && SystemParameters.ClientAreaAnimation && _windowVisible)
         {
             if (_pulsing) return;
             _pulsing = true;

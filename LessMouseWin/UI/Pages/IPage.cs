@@ -6,4 +6,5 @@ internal interface IPage
 {
     FrameworkElement Content { get; }
     void RefreshDynamic();
+    void OnWindowVisibilityChanged(bool visible) { }
 }

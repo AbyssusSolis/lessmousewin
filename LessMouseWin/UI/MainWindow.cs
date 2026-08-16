@@ -115,6 +115,7 @@ public sealed class MainWindow : Window
         Deactivated += (_, _) =>
         {
             Hide();
+            _page?.OnWindowVisibilityChanged(false);
             _state.PopoverDidClose();
         };
         Closing += (_, args) =>
@@ -140,6 +141,7 @@ public sealed class MainWindow : Window
         BuildPage();
         if (!IsVisible) Show();
         Activate();
+        _page?.OnWindowVisibilityChanged(true);
         _repositionAfterFit = true;
         PositionNearTrayIcon();
         _state.PopoverDidOpen();
