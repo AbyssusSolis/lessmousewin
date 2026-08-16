@@ -217,7 +217,8 @@ internal sealed class MainPage : IPage
             _lastCelebration = celebration;
             if (celebration is { } ruleId && RuleLibrary.Rule(ruleId) is { } rule)
             {
-                _celebrationTitle.Text = Loc.Format("celebration.title", rule.PrimaryShortcutLabel);
+                _celebrationTitle.Text = Loc.Format("celebration.title",
+                    _state.CelebrationShortcut ?? rule.PrimaryShortcutLabel);
                 _celebrationSub.Text = Loc.T(rule.TitleKey);
                 _celebrationModule.Visibility = Visibility.Visible;
             }

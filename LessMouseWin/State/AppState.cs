@@ -47,6 +47,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
     private Dictionary<string, SuggestionState> _suggestionStates = [];
     private int _unreadCount;
     private string? _celebration;
+    private string? _celebrationShortcut;
     private int _todayAppSwitches;
     private readonly ActivityDays _activityDays = new();
 
@@ -174,6 +175,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
     public IReadOnlyDictionary<string, SuggestionState> SuggestionStates => _suggestionStates;
     public int UnreadCount => _unreadCount;
     public string? Celebration => _celebration;
+    public string? CelebrationShortcut => _celebrationShortcut;
     public int TodayAppSwitches => _todayAppSwitches;
     public ActivityDays Activity => _activityDays;
 
@@ -256,6 +258,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         if (adopted is not null)
         {
             _celebration = adopted;
+            _celebrationShortcut = KeyWhitelist.FormatSignatureDisplay(storageKey);
             RefreshUnreadCount();
             Store.SaveSuggestionStates(_suggestionStates);
             NotifyLayout();
@@ -358,6 +361,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
             Store.SaveSuggestionStates(_suggestionStates);
         }
         _celebration = null;
+        _celebrationShortcut = null;
         NotifyChanged();
         NotifyLayout();
     }
@@ -370,6 +374,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         _todayComboCounts = [];
         _detector.ResetAll();
         _celebration = null;
+        _celebrationShortcut = null;
         RefreshToday();
         RefreshUnreadCount();
     }

@@ -76,9 +76,12 @@ internal static class Program
         Check("ctrl+c counted", today.Combos.GetValueOrDefault("ctrl+c") == 1);
         Check("unread card created", state.UnreadCount == 1 &&
             state.SuggestionStates.TryGetValue("delete-by-word", out var s) && s.Status == SuggestionStatus.Unread);
+        state.Ingest(new KeyEvent { Timestamp = 60, KeyCode = 0x08, Modifiers = ModifierSet.Ctrl, Application = "notepad" });
+        Check("celebration shows the exact adopted shortcut",
+            state.CelebrationShortcut == "Ctrl+⌫");
         var suggestionsJson = File.ReadAllText(Path.Combine(dir, "suggestions.json"));
         Console.WriteLine("SUGGESTIONS JSON: " + suggestionsJson.Replace(Environment.NewLine, " "));
-        Check("suggestion state serializes as text", suggestionsJson.Contains("unread"));
+        Check("suggestion state serializes as text", suggestionsJson.Contains("\"status\": \"adopted\""));
 
         // Page constructors must all render a measurable tree.
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };

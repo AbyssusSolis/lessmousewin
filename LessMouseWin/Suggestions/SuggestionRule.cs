@@ -85,7 +85,7 @@ public sealed class SuggestionRule
     }
 
     public string PrimaryShortcutLabel =>
-        KeyCaps.Count > 0 ? string.Join("", KeyCaps[0].Select(cap => cap.Label)) : "";
+        KeyCaps.Count > 0 ? string.Join("+", KeyCaps[0].Select(cap => cap.Label)) : "";
 }
 
 public enum SuggestionStatus
