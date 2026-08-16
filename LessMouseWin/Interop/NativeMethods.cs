@@ -27,6 +27,9 @@ internal static class NativeMethods
     public const int GwlStyle = -16;
     public const long EsPassword = 0x0020;
 
+    public const uint MonitorDefaultToNearest = 0x00000002;
+    public const int MdttEffectiveDpi = 0;
+
     [StructLayout(LayoutKind.Sequential)]
     public struct Point
     {
@@ -65,6 +68,15 @@ internal static class NativeMethods
         public int Top;
         public int Right;
         public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MonitorInfo
+    {
+        public int CbSize;
+        public Rect RcMonitor;
+        public Rect RcWork;
+        public uint DwFlags;
     }
 
     [DllImport("user32.dll", SetLastError = true)]
@@ -115,6 +127,15 @@ internal static class NativeMethods
 
     [DllImport("user32.dll")]
     public static extern IntPtr GetActiveWindow();
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromRect(ref Rect lprc, uint dwFlags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool GetMonitorInfoW(IntPtr hMonitor, ref MonitorInfo lpmi);
+
+    [DllImport("shcore.dll")]
+    public static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
     public delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 

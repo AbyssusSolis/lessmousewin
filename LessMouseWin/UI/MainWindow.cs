@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -30,6 +31,8 @@ public sealed class MainWindow : Window
         Top,
         Bottom,
     }
+
+    private readonly record struct MonitorLayout(Rect WorkDip, double Scale);
 
     private PopupRoute _route = PopupRoute.Main;
     private string? _detailRuleId;
@@ -181,7 +184,7 @@ public sealed class MainWindow : Window
             Width = Ui.PopupWidth;
             var previousHeight = Height;
             var previousTop = Top;
-            var maxByWorkArea = Math.Max(240, SystemParameters.WorkArea.Height - 12);
+            var maxByWorkArea = Math.Max(240, GetWorkArea().Height - 12);
             var maxHeight = Math.Min(Ui.MaxPopupHeight, maxByWorkArea);
             var newHeight = Math.Clamp(desiredHeight + ChromeHeight, 240, maxHeight);
 
@@ -221,9 +224,8 @@ public sealed class MainWindow : Window
     /// </summary>
     private TaskbarAnchor GetTaskbarAnchor()
     {
-        var work = SystemParameters.WorkArea;
-        var scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
-        if (scale <= 0) scale = 1.0;
+        var work = GetWorkArea();
+        var scale = GetMonitorLayout()?.Scale ?? CurrentScale();
 
         if (TrayIconRectProvider?.Invoke() is { } trayRect)
         {
@@ -249,11 +251,54 @@ public sealed class MainWindow : Window
 
     private void ClampToWorkArea()
     {
-        var work = SystemParameters.WorkArea;
+        var work = GetWorkArea();
         var maxLeft = Math.Max(work.Left + 8, work.Right - Width - 8);
         var maxTop = Math.Max(work.Top + 8, work.Bottom - Height - 8);
         Left = Math.Clamp(Left, work.Left + 8, maxLeft);
         Top = Math.Clamp(Top, work.Top + 8, maxTop);
+    }
+
+    private Rect GetWorkArea() => GetMonitorLayout()?.WorkDip ?? SystemParameters.WorkArea;
+
+    private double CurrentScale()
+    {
+        var scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+        return scale > 0 ? scale : 1.0;
+    }
+
+    /// <summary>
+    /// Resolves the tray icon's monitor and returns that monitor's work area
+    /// and DPI scale. This keeps positioning correct on mixed-DPI multi-monitor
+    /// setups instead of assuming the primary screen's metrics.
+    /// </summary>
+    private MonitorLayout? GetMonitorLayout()
+    {
+        if (TrayIconRectProvider?.Invoke() is not { } trayRect) return null;
+
+        var rc = new NativeMethods.Rect
+        {
+            Left = trayRect.Left,
+            Top = trayRect.Top,
+            Right = trayRect.Right,
+            Bottom = trayRect.Bottom,
+        };
+        var monitor = NativeMethods.MonitorFromRect(ref rc, NativeMethods.MonitorDefaultToNearest);
+        if (monitor == IntPtr.Zero) return null;
+
+        var info = new NativeMethods.MonitorInfo { CbSize = Marshal.SizeOf<NativeMethods.MonitorInfo>() };
+        if (!NativeMethods.GetMonitorInfoW(monitor, ref info)) return null;
+
+        var scale = CurrentScale();
+        if (NativeMethods.GetDpiForMonitor(monitor, NativeMethods.MdttEffectiveDpi, out var dpiX, out _) == 0)
+            scale = dpiX / 96.0;
+        if (scale <= 0) scale = 1.0;
+
+        var work = new Rect(
+            info.RcWork.Left / scale,
+            info.RcWork.Top / scale,
+            (info.RcWork.Right - info.RcWork.Left) / scale,
+            (info.RcWork.Bottom - info.RcWork.Top) / scale);
+        return new MonitorLayout(work, scale);
     }
 
     /// <summary>Called before Application.Shutdown so the popup's cancel-on-close doesn't block exit.</summary>
@@ -280,9 +325,9 @@ public sealed class MainWindow : Window
 
     private void PositionNearTrayIcon()
     {
-        var work = SystemParameters.WorkArea;
-        var scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
-        if (scale <= 0) scale = 1.0;
+        var layout = GetMonitorLayout();
+        var work = layout?.WorkDip ?? SystemParameters.WorkArea;
+        var scale = layout?.Scale ?? CurrentScale();
 
         var rect = TrayIconRectProvider?.Invoke();
         double left;
