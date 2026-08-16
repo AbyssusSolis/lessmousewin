@@ -90,20 +90,25 @@ public sealed class StatsStore
         }
     }
 
-    private void Archive(string path, string prefix)
+    private bool Archive(string path, string prefix)
     {
         try
         {
-            if (!File.Exists(path)) return;
+            if (!File.Exists(path)) return true;
             var stamp = new DateTimeOffset(_now()).ToUnixTimeSeconds();
             var target = Path.Combine(_directory, $"{prefix}-{stamp}.json");
             if (File.Exists(target))
                 target = Path.Combine(_directory, $"{prefix}-{stamp}-{Guid.NewGuid():N}.json");
-            File.Move(path, target);
+            // Copy-then-delete keeps the original until an archive actually
+            // exists. If either step fails, callers can abort destructive
+            // operations instead of silently overwriting the only copy.
+            File.Copy(path, target, overwrite: false);
+            File.Delete(path);
+            return true;
         }
         catch
         {
-            // Recovery must never crash the app.
+            return false;
         }
     }
 
@@ -310,16 +315,19 @@ public sealed class StatsStore
         }
     }
 
-    public void EraseAll()
+    public bool EraseAll()
     {
         lock (_lock)
         {
-            Archive(StoragePath, "stats.erased");
-            Archive(SuggestionsPath, "suggestions.erased");
+            var statsArchived = Archive(StoragePath, "stats.erased");
+            var suggestionsArchived = Archive(SuggestionsPath, "suggestions.erased");
+            if (!statsArchived || !suggestionsArchived) return false;
+
             _root = new StatsRoot();
             _suggestionStates = new Dictionary<string, SuggestionState>();
             _dirty = false;
             _lastFlush = null;
+            return true;
         }
     }
 

@@ -366,9 +366,9 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         NotifyLayout();
     }
 
-    public void EraseAllData()
+    public bool EraseAllData()
     {
-        Store.EraseAll();
+        if (!Store.EraseAll()) return false;
         Store.Flush();
         _suggestionStates = [];
         _todayComboCounts = [];
@@ -377,6 +377,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         _celebrationShortcut = null;
         RefreshToday();
         RefreshUnreadCount();
+        return true;
     }
 
     public void PopoverDidOpen() => RefreshToday();

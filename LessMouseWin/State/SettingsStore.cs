@@ -89,7 +89,18 @@ public sealed class SettingsStore
         }
         catch
         {
-            try { File.Move(_path, _path + ".corrupt", overwrite: true); } catch { }
+            try
+            {
+                if (File.Exists(_path))
+                {
+                    var backup = _path + ".corrupt";
+                    if (File.Exists(backup))
+                        backup = _path + ".corrupt-" + DateTime.Now.Ticks;
+                    File.Copy(_path, backup);
+                    File.Delete(_path);
+                }
+            }
+            catch { }
         }
         return settings;
     }

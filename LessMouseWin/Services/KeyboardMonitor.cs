@@ -129,7 +129,7 @@ public sealed class KeyboardMonitor : IDisposable
                 if (message is NativeMethods.WmKeydown or NativeMethods.WmSyskeydown)
                 {
                     var autorepeat = !_downKeys.Add(vk);
-                    if (!autorepeat)
+                    if (!autorepeat && !IsModifierKey(vk))
                     {
                         var foreground = NativeMethods.GetForegroundWindow();
                         if (foreground != IntPtr.Zero)
@@ -171,6 +171,13 @@ public sealed class KeyboardMonitor : IDisposable
         if (_dispatcher.HasShutdownStarted || _dispatcher.HasShutdownFinished) return;
         _dispatcher.BeginInvoke(DispatcherPriority.Background, () => _onEvent(raw));
     }
+
+    private static bool IsModifierKey(ushort vk) =>
+        vk == NativeMethods.VkShift ||
+        vk == NativeMethods.VkControl ||
+        vk == NativeMethods.VkMenu ||
+        vk == NativeMethods.VkLwin ||
+        vk == NativeMethods.VkRwin;
 
     private static ModifierSet ReadModifiers()
     {
