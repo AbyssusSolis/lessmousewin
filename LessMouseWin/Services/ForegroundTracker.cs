@@ -44,6 +44,11 @@ public sealed class ForegroundTracker : IDisposable
         {
             if (idObject != 0 || idChild != 0) return;
             NativeMethods.GetWindowThreadProcessId(hwnd, out var pid);
+
+            // Refresh even when the PID number didn't change: Windows reuses
+            // PIDs, and this is the moment where a reused PID must be
+            // re-identified before the next keystroke is attributed.
+            ProcessNameResolver.Refresh(pid);
             Notify(pid);
         }
         catch
