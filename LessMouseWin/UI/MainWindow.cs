@@ -20,6 +20,7 @@ public sealed class MainWindow : Window
     private readonly AppState _state;
     private readonly ScrollViewer _scroller;
     private readonly Border _surface;
+    private readonly Border _scrollFade;
     // The window is 380 DIPs wide with a 12 DIP shadow margin and a 1 DIP
     // border on each side, leaving exactly 354 DIPs for the ScrollViewer.
     private const double PageViewportWidth = Ui.PopupWidth - 26;
@@ -93,8 +94,23 @@ public sealed class MainWindow : Window
             HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
             Focusable = false,
         };
-        _surface.Child = _scroller;
+
+        // With the scrollbar hidden, a soft bottom fade is the only signal
+        // that more content exists. It disappears at the bottom.
+        _scrollFade = new Border
+        {
+            Height = 22,
+            VerticalAlignment = VerticalAlignment.Bottom,
+            IsHitTestVisible = false,
+            Visibility = Visibility.Collapsed,
+        };
+        var surfaceContent = new Grid();
+        surfaceContent.Children.Add(_scroller);
+        surfaceContent.Children.Add(_scrollFade);
+        _surface.Child = surfaceContent;
         Content = _surface;
+        _scroller.ScrollChanged += (_, _) => UpdateScrollFade();
+        _scroller.SizeChanged += (_, _) => UpdateScrollFade();
 
         Deactivated += (_, _) =>
         {
@@ -140,6 +156,7 @@ public sealed class MainWindow : Window
         _surface.Background = Palette.BackgroundBrush;
         _surface.BorderBrush = Palette.BorderBrush;
         BuildPage();
+        UpdateScrollFade();
     }
 
     private void BuildPage()
@@ -246,6 +263,24 @@ public sealed class MainWindow : Window
         if (work.Top > 0)
             return TaskbarAnchor.Top;
         return TaskbarAnchor.Bottom;
+    }
+
+    private void UpdateScrollFade()
+    {
+        var scrollable = _scroller.ScrollableHeight > 0.5;
+        var atBottom = _scroller.VerticalOffset >= _scroller.ScrollableHeight - 1.0;
+        if (!scrollable || atBottom)
+        {
+            _scrollFade.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        var color = Palette.BackgroundBrush.ToColor();
+        _scrollFade.Background = new LinearGradientBrush(
+            Color.FromArgb(0, color.R, color.G, color.B),
+            Color.FromArgb(230, color.R, color.G, color.B),
+            new Point(0, 0), new Point(0, 1));
+        _scrollFade.Visibility = Visibility.Visible;
     }
 
     private void ClampToWorkArea()
