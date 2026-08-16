@@ -13,7 +13,7 @@ internal static class Ui
     // 8pt module gap (tight, so modules tile into one panel rather than
     // drifting into separate cards), rows on a 12/8 grid.
     public const double PopupWidth = 380;
-    public const double MaxPopupHeight = 720;
+    public const double MaxPopupHeight = 800;
     public const double Gutter = 12;
     public const double ModuleGap = 8;
     public const double Radius = 10;

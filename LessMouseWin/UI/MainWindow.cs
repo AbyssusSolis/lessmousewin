@@ -181,7 +181,9 @@ public sealed class MainWindow : Window
             Width = Ui.PopupWidth;
             var previousHeight = Height;
             var previousTop = Top;
-            var newHeight = Math.Clamp(desiredHeight + ChromeHeight, 240, Ui.MaxPopupHeight);
+            var maxByWorkArea = Math.Max(240, SystemParameters.WorkArea.Height - 12);
+            var maxHeight = Math.Min(Ui.MaxPopupHeight, maxByWorkArea);
+            var newHeight = Math.Clamp(desiredHeight + ChromeHeight, 240, maxHeight);
 
             if (_repositionAfterFit && IsVisible)
             {
