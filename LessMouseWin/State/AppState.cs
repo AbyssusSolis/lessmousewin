@@ -59,6 +59,9 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
+    /// <summary>Raised when page structure (not just counters) changes.</summary>
+    public event Action? LayoutChanged;
+
     public AppState(StatsStore store, AppSettings settings, Dispatcher dispatcher, TimeSpan? publishDelay = null)
     {
         Store = store;
@@ -128,6 +131,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
             _hookError = result.Error ?? "unknown hook error";
         }
         NotifyChanged();
+        NotifyLayout();
     }
 
     private void OnSettingsChanged(object? sender, EventArgs e)
@@ -158,6 +162,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         // Excluded-apps changes must not stitch bursts across the boundary.
         _detector.ResetAll();
         NotifyChanged();
+        NotifyLayout();
     }
 
     // MARK: UI-facing state
@@ -253,6 +258,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
             _celebration = adopted;
             RefreshUnreadCount();
             Store.SaveSuggestionStates(_suggestionStates);
+            NotifyLayout();
         }
 
         // Then pattern detection on the same stroke.
@@ -317,6 +323,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         {
             RefreshUnreadCount();
             Store.SaveSuggestionStates(_suggestionStates);
+            NotifyLayout();
         }
     }
 
@@ -331,6 +338,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         RefreshUnreadCount();
         Store.SaveSuggestionStates(_suggestionStates);
         NotifyChanged();
+        NotifyLayout();
     }
 
     public void Dismiss(string ruleId)
@@ -339,6 +347,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         RefreshUnreadCount();
         Store.SaveSuggestionStates(_suggestionStates);
         NotifyChanged();
+        NotifyLayout();
     }
 
     public void DismissCelebration()
@@ -350,6 +359,7 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
         }
         _celebration = null;
         NotifyChanged();
+        NotifyLayout();
     }
 
     public void EraseAllData()
@@ -382,4 +392,6 @@ public sealed class AppState : INotifyPropertyChanged, IDisposable
 
     private void NotifyChanged([CallerMemberName] string? name = null) =>
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name ?? string.Empty));
+
+    private void NotifyLayout() => LayoutChanged?.Invoke();
 }

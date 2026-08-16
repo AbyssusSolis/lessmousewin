@@ -22,6 +22,7 @@ internal sealed class SettingsPage : IPage
     private bool _confirmErase;
     private Button? _eraseButton;
     private TextBlock? _eraseSubtitle;
+    private string _lastSignature = "";
 
     public FrameworkElement Content => _root;
 
@@ -116,6 +117,12 @@ internal sealed class SettingsPage : IPage
 
     public void RefreshDynamic()
     {
+        var signature =
+            $"{_state.Settings.IsPaused}|{LoginItemService.IsEnabled}|{_confirmErase}|{Loc.Override ?? "system"}|" +
+            string.Join(",", _state.Settings.ExcludedApps.OrderBy(x => x, StringComparer.OrdinalIgnoreCase));
+        if (signature == _lastSignature) return;
+        _lastSignature = signature;
+
         _pauseToggle.IsChecked = _state.Settings.IsPaused;
         _launchToggle.IsChecked = LoginItemService.IsEnabled;
         RebuildExclusions();

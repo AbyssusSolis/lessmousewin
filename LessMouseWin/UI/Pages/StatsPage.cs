@@ -18,6 +18,7 @@ internal sealed class StatsPage : IPage
     private readonly TextBlock _adoptedValue;
     private readonly Border _adoptedMeter;
     private readonly TextBlock _daysTitle;
+    private string _lastSignature = "";
 
     public FrameworkElement Content => _root;
 
@@ -54,14 +55,25 @@ internal sealed class StatsPage : IPage
 
         _root.Children.Add(Ui.QuietButton(Loc.T("stats.revealData"), TrayIconService.OpenDataFolder));
 
-        Rebuild();
+        Rebuild(_state.Store.TopCombos(dayLimit: 7, limit: 8),
+            _state.SuggestionStates.Values.Count(s => s.Status == SuggestionStatus.Adopted),
+            _state.Store.DaysObserved());
     }
 
-    public void RefreshDynamic() => Rebuild();
-
-    private void Rebuild()
+    public void RefreshDynamic()
     {
         var top = _state.Store.TopCombos(dayLimit: 7, limit: 8);
+        var adopted = _state.SuggestionStates.Values.Count(s => s.Status == SuggestionStatus.Adopted);
+        var days = _state.Store.DaysObserved();
+        var signature = string.Join(";", top.Select(pair => $"{pair.Key}:{pair.Value}"))
+                        + $"|{adopted}|{days}";
+        if (signature == _lastSignature) return;
+        _lastSignature = signature;
+        Rebuild(top, adopted, days);
+    }
+
+    private void Rebuild(IReadOnlyList<KeyValuePair<string, int>> top, int adopted, int days)
+    {
         _combosStack.Children.Clear();
         _emptyText.Visibility = top.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -82,12 +94,11 @@ internal sealed class StatsPage : IPage
                 meter));
         }
 
-        var adopted = _state.SuggestionStates.Values.Count(s => s.Status == SuggestionStatus.Adopted);
         var total = RuleLibrary.All.Count;
         _adoptedTitle.Text = Loc.Format("stats.adopted", adopted, total);
         _adoptedValue.Text = $"{adopted}/{total}";
         Ui.UpdateMeter(_adoptedMeter, (double)adopted / Math.Max(total, 1));
 
-        _daysTitle.Text = Loc.Format("stats.daysObserved", _state.Store.DaysObserved());
+        _daysTitle.Text = Loc.Format("stats.daysObserved", days);
     }
 }

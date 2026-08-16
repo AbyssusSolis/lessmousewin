@@ -36,6 +36,9 @@ internal sealed class MainPage : IPage
     private readonly StackPanel _inboxStack;
     private readonly TextBlock _inboxEmpty;
 
+    private string? _lastCelebration;
+    private string _lastInboxSignature = "";
+
     public FrameworkElement Content => _root;
 
     public MainPage(AppState state, Action<string> openSuggestion, Action openStats,
@@ -207,18 +210,29 @@ internal sealed class MainPage : IPage
         _patternsValue.Text = _state.Today.TotalPatterns.ToString();
         _combosValue.Text = _state.Today.Combos.Count.ToString();
 
-        if (_state.Celebration is { } ruleId && RuleLibrary.Rule(ruleId) is { } rule)
+        var celebration = _state.Celebration;
+        if (celebration != _lastCelebration)
         {
-            _celebrationTitle.Text = Loc.Format("celebration.title", rule.PrimaryShortcutLabel);
-            _celebrationSub.Text = Loc.T(rule.TitleKey);
-            _celebrationModule.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            _celebrationModule.Visibility = Visibility.Collapsed;
+            _lastCelebration = celebration;
+            if (celebration is { } ruleId && RuleLibrary.Rule(ruleId) is { } rule)
+            {
+                _celebrationTitle.Text = Loc.Format("celebration.title", rule.PrimaryShortcutLabel);
+                _celebrationSub.Text = Loc.T(rule.TitleKey);
+                _celebrationModule.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                _celebrationModule.Visibility = Visibility.Collapsed;
+            }
         }
 
-        RebuildInbox();
+        var inboxSignature = string.Join("|", RuleLibrary.All.Select(rule =>
+            _state.SuggestionStates.TryGetValue(rule.Id, out var s) ? s.Status.ToString() : "-"));
+        if (inboxSignature != _lastInboxSignature)
+        {
+            _lastInboxSignature = inboxSignature;
+            RebuildInbox();
+        }
     }
 
     /// <summary>

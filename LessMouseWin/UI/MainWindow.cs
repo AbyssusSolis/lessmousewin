@@ -133,7 +133,6 @@ public sealed class MainWindow : Window
     {
         if (!IsVisible) return;
         _page?.RefreshDynamic();
-        FitToPage();
     }
 
     public void RebuildPage()
@@ -170,7 +169,7 @@ public sealed class MainWindow : Window
     /// horizontally ("有滚轮就显示不全" fixed by keeping the viewport width
     /// constant in both cases).
     /// </summary>
-    private void FitToPage()
+    public void FitToPage()
     {
         if (_page is null) return;
         Dispatcher.BeginInvoke(() =>

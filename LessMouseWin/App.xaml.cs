@@ -47,6 +47,7 @@ public partial class App : Application
             _window.RefreshPage();
             _tray.Refresh();
         };
+        _state.LayoutChanged += () => _window.FitToPage();
 
         // Refresh the window when Windows flips light/dark mode.
         Microsoft.Win32.SystemEvents.UserPreferenceChanged += (_, args) =>
