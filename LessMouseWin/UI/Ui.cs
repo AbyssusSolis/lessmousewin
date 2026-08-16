@@ -228,6 +228,7 @@ internal static class Ui
     {
         const double chipHeight = 28;
         const double chipRadius = chipHeight / 2; // 14
+        const double chipMinWidth = 68;           // keeps a straight middle even for "中文"
 
         var foreground = selected ? Palette.AccentInkBrush : Palette.TextSecondaryBrush;
         var background = selected ? Palette.AccentSoftBrush : Palette.SurfaceAltBrush;
@@ -236,15 +237,19 @@ internal static class Ui
 
         var button = new Button
         {
-            Content = Text(label, 13, selected ? FontWeights.SemiBold : FontWeights.Normal, foreground),
+            Content = Text(label, 12, selected ? FontWeights.SemiBold : FontWeights.Normal, foreground),
             MinHeight = chipHeight,
-            Padding = new Thickness(14, 0, 14, 0),
+            MinWidth = chipMinWidth,
+            // Generous horizontal padding is part of the capsule shape; the
+            // text must never touch the semicircular ends.
+            Padding = new Thickness(16, 0, 16, 0),
             BorderThickness = new Thickness(1),
             BorderBrush = border,
             Background = background,
             Cursor = System.Windows.Input.Cursors.Hand,
             HorizontalContentAlignment = HorizontalAlignment.Center,
             VerticalContentAlignment = VerticalAlignment.Center,
+            SnapsToDevicePixels = true,
         };
 
         var template = new ControlTemplate(typeof(Button));
@@ -255,6 +260,7 @@ internal static class Ui
         capsule.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));
         capsule.SetValue(Border.CornerRadiusProperty, new CornerRadius(chipRadius));
         var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+        presenter.SetValue(ContentPresenter.MarginProperty, new TemplateBindingExtension(Control.PaddingProperty));
         presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
         presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
         capsule.AppendChild(presenter);
@@ -383,6 +389,7 @@ internal static class Ui
         border.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));
         border.SetValue(Border.CornerRadiusProperty, new CornerRadius(radius));
         var content = new FrameworkElementFactory(typeof(ContentPresenter));
+        content.SetValue(ContentPresenter.MarginProperty, new TemplateBindingExtension(Control.PaddingProperty));
         content.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
         content.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
         border.AppendChild(content);
