@@ -59,7 +59,7 @@ internal sealed class SettingsPage : IPage
             Palette.TextTertiaryBrush, TextWrapping.Wrap,
             margin: new Thickness(Ui.RowPadding, 0, Ui.RowPadding, 12));
         _exclusionsStack = new StackPanel();
-        var addButton = Ui.QuietButton("+", ShowAddAppMenu);
+        var addButton = Ui.QuietButton("+", ShowAddAppMenu, automationName: Loc.T("settings.exclusions.add"));
         var exclusions = new StackPanel();
         exclusions.Children.Add(Ui.TitleRow(Loc.T("settings.exclusions"), addButton));
         exclusions.Children.Add(_exclusionsEmpty);
@@ -80,7 +80,7 @@ internal sealed class SettingsPage : IPage
         // Data module.
         _storagePath = Ui.Text(_state.Store.StoragePath, 11, FontWeights.Normal, Palette.TextTertiaryBrush,
             TextWrapping.Wrap);
-        var showButton = Ui.QuietButton(Loc.T("settings.showData"), TrayIconService.OpenDataFolder);
+        var showButton = Ui.QuietButton(Loc.T("settings.showData"), TrayIconService.OpenDataFolder, automationName: Loc.T("settings.dataLocation"));
         var data = new StackPanel();
         data.Children.Add(Ui.TitleRow(Loc.T("settings.data")));
         data.Children.Add(Ui.Row(Loc.T("settings.dataLocation"), null, "▦", false, showButton, _storagePath));
@@ -139,7 +139,7 @@ internal sealed class SettingsPage : IPage
         {
             if (i > 0) _exclusionsStack.Children.Add(Ui.Divider());
             var app = apps[i];
-            var remove = Ui.QuietButton("✕", () => _state.Settings.Include(app));
+            var remove = Ui.QuietButton("✕", () => _state.Settings.Include(app), automationName: Loc.T("settings.exclusions") + " - " + app);
             _exclusionsStack.Children.Add(Ui.Row(AppDisplayName(app), app, "▣", false, remove,
                 subtitleWrap: TextWrapping.Wrap));
         }

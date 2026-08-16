@@ -311,7 +311,7 @@ internal sealed class MainPage : IPage
                 : new Grid();
         var row = Ui.Row(Loc.T(rule.TitleKey), summary, rule.Symbol, status == SuggestionStatus.Unread, trailing);
         var ruleId = rule.Id;
-        return Ui.Hoverable(row, () => _openSuggestion(ruleId));
+        return Ui.Hoverable(row, () => _openSuggestion(ruleId), automationName: Loc.T(rule.TitleKey));
     }
 
     private string Summary(SuggestionRule rule)

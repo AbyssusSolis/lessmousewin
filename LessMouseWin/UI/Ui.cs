@@ -214,9 +214,9 @@ internal static class Ui
 
     // Ghost action: no border, muted ink, a wash on hover (Windows) and
     // surfaceAlt on press (the original's RowButtonStyle grammar).
-    public static Button QuietButton(string label, Action onClick) =>
+    public static Button QuietButton(string label, Action onClick, string? automationName = null) =>
         StyledButton(label, Palette.TextTertiaryBrush, Brushes.Transparent, Palette.SurfaceHoverBrush, 0, 8, 4, onClick,
-            radius: RadiusSmall, size: 11, weight: FontWeights.Medium);
+            radius: RadiusSmall, size: 11, weight: FontWeights.Medium, automationName: automationName);
 
     /// <summary>
     /// A stadium-shaped toggle chip — semicircle ends, straight middle.
@@ -272,9 +272,14 @@ internal static class Ui
         var pressed = new Trigger { Property = Button.IsPressedProperty, Value = true };
         pressed.Setters.Add(new Setter(Control.BackgroundProperty, hoverBackground));
         template.Triggers.Add(pressed);
+        var focus = new Trigger { Property = UIElement.IsKeyboardFocusedProperty, Value = true };
+        focus.Setters.Add(new Setter(Control.BorderBrushProperty, Palette.AccentBrush));
+        focus.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+        template.Triggers.Add(focus);
 
         button.Template = template;
         button.Click += (_, _) => onClick();
+        System.Windows.Automation.AutomationProperties.SetName(button, label);
         return button;
     }
 
@@ -337,7 +342,7 @@ internal static class Ui
     }
 
     /// <summary>A transparent button whose background washes in on hover — for clickable list rows.</summary>
-    public static Button Hoverable(UIElement content, Action onClick)
+    public static Button Hoverable(UIElement content, Action onClick, string? automationName = null)
     {
         var button = new Button
         {
@@ -366,7 +371,8 @@ internal static class Ui
 
     private static Button StyledButton(string label, Brush foreground, Brush background, Brush hover,
         double borderThickness, double horizontalPadding, double verticalPadding, Action onClick,
-        double radius = Radius, double size = 13, FontWeight? weight = null, bool pressNudge = false)
+        double radius = Radius, double size = 13, FontWeight? weight = null, bool pressNudge = false,
+        string? automationName = null)
     {
         var button = new Button
         {
@@ -407,9 +413,15 @@ internal static class Ui
             nudge.Setters.Add(new Setter(UIElement.RenderTransformProperty, new TranslateTransform(0, 1), "bd"));
             template.Triggers.Add(nudge);
         }
+        var focus = new Trigger { Property = UIElement.IsKeyboardFocusedProperty, Value = true };
+        focus.Setters.Add(new Setter(Control.BorderBrushProperty, Palette.AccentBrush));
+        focus.Setters.Add(new Setter(Control.BorderThicknessProperty, new Thickness(1)));
+        template.Triggers.Add(focus);
+
         button.Style = style;
         button.Template = template;
         button.Click += (_, _) => onClick();
+        System.Windows.Automation.AutomationProperties.SetName(button, automationName ?? label);
         return button;
     }
 
