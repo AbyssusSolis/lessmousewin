@@ -91,10 +91,29 @@ internal static class Program
         var stats = new StatsPage(state, () => { });
         var settingsPage = new SettingsPage(state, () => { });
         var detail = new DetailPage(state, "delete-by-word", () => { });
-        Check("main page renders", Measure(main.Content).Height > 100);
-        Check("stats page renders", Measure(stats.Content).Height > 100);
-        Check("settings page renders", Measure(settingsPage.Content).Height > 100);
-        Check("detail page renders", Measure(detail.Content).Height > 100);
+        var mainSize = Measure(main.Content);
+        var statsSize = Measure(stats.Content);
+        var settingsSize = Measure(settingsPage.Content);
+        var detailSize = Measure(detail.Content);
+        Check("main page renders", mainSize.Height > 100 && mainSize.Width <= 354);
+        Check("stats page renders", statsSize.Height > 100 && statsSize.Width <= 354);
+        Check("settings page renders", settingsSize.Height > 100 && settingsSize.Width <= 354);
+        Check("detail page renders", detailSize.Height > 100 && detailSize.Width <= 354);
+
+        // Language/layout regression guards: both languages must fit the
+        // popup viewport without scrolling, and even the shortest chip must
+        // keep a straight middle (min width 68 with a 28px capsule).
+        Loc.Override = "zh-Hans";
+        var zhHeight = Measure(new SettingsPage(state, () => { }).Content).Height;
+        Loc.Override = "en";
+        var enHeight = Measure(new SettingsPage(state, () => { }).Content).Height;
+        Loc.Override = null;
+        var viewport = Ui.MaxPopupHeight - 26;
+        Check("zh settings fit viewport", zhHeight <= viewport);
+        Check("en settings fit viewport", enHeight <= viewport);
+        var shortChip = Ui.Chip("中文", false, () => { });
+        var chipSize = Measure(shortChip);
+        Check("short language chip keeps a straight middle", chipSize.Width >= 68 && chipSize.Height >= 28);
 
         Directory.Delete(dir, recursive: true);
         return ok ? 0 : 1;
