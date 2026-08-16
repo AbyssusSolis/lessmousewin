@@ -12,6 +12,8 @@ public partial class App : Application
     private MainWindow? _window;
     private AppState? _state;
     private bool _quitting;
+    private EventWaitHandle? _showSignal;
+    private bool _showSignalLoop = true;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -20,9 +22,22 @@ public partial class App : Application
         _singleInstance = new Mutex(true, @"Local\LessMouseWinSingleInstance", out var isFirst);
         if (!isFirst)
         {
+            try
+            {
+                using var signal = EventWaitHandle.OpenExisting(@"Local\LessMouseWinShowSignal");
+                signal.Set();
+            }
+            catch
+            {
+                // The first instance may still be starting; it will appear
+                // momentarily anyway.
+            }
             Shutdown();
             return;
         }
+
+        _showSignal = new EventWaitHandle(false, EventResetMode.AutoReset, @"Local\LessMouseWinShowSignal");
+        Task.Run(ListenForShowSignal);
 
         Localization.Loc.Initialize();
 
@@ -90,6 +105,8 @@ public partial class App : Application
 
         try { _state?.Shutdown(); } catch { }
         try { _tray?.Dispose(); _tray = null; } catch { }
+        _showSignalLoop = false;
+        try { _showSignal?.Dispose(); _showSignal = null; } catch { }
         try { _singleInstance?.Dispose(); _singleInstance = null; } catch { }
 
         // Give the shell a beat to process NIM_DELETE so no ghost tray icon
@@ -97,6 +114,29 @@ public partial class App : Application
         try { Thread.Sleep(120); } catch { }
 
         Environment.Exit(0);
+    }
+
+    private void ListenForShowSignal()
+    {
+        while (_showSignalLoop)
+        {
+            try
+            {
+                if (_showSignal is null || !_showSignal.WaitOne(500)) continue;
+                Dispatcher.BeginInvoke(() =>
+                {
+                    if (!_quitting) _window?.ShowPopup();
+                });
+            }
+            catch (ObjectDisposedException)
+            {
+                break;
+            }
+            catch
+            {
+                // Transient signal-listener failures must not kill the app.
+            }
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
