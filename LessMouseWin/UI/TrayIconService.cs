@@ -93,7 +93,14 @@ public sealed class TrayIconService : IDisposable
 
     public void Refresh()
     {
-        _icon.Text = Loc.T("app.name");
+        var status = _state.Settings.IsPaused
+            ? Loc.T("tracking.paused")
+            : _state.IsTracking
+                ? Loc.T("tracking.active")
+                : Loc.T("tracking.failed");
+        var unread = _state.UnreadCount > 0 ? $" · {Loc.Format("inbox.unread", _state.UnreadCount)}" : "";
+        _icon.Text = $"{Loc.T("app.name")} · {status}{unread}";
+
         var alert = _state.UnreadCount > 0 || _state.Celebration is not null;
         if (alert != _alertShown)
         {
