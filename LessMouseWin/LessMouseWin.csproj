@@ -22,4 +22,10 @@
     <EmbeddedResource Include="Assets\LessMouseUnread.ico" />
   </ItemGroup>
 
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <SatelliteResourceLanguages>en;zh-Hans</SatelliteResourceLanguages>
+  </PropertyGroup>
+
 </Project>
