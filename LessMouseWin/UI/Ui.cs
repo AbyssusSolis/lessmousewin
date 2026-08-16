@@ -218,15 +218,59 @@ internal static class Ui
         StyledButton(label, Palette.TextTertiaryBrush, Brushes.Transparent, Palette.SurfaceHoverBrush, 0, 8, 4, onClick,
             radius: RadiusSmall, size: 11, weight: FontWeights.Medium);
 
-    /// <summary>A capsule-shaped toggle chip — used for mutually exclusive picks like language.</summary>
-    public static Button Chip(string label, bool selected, Action onClick) =>
-        StyledButton(label,
-            selected ? Palette.AccentInkBrush : Palette.TextSecondaryBrush,
-            selected ? Palette.AccentSoftBrush : Brushes.Transparent,
-            selected ? Palette.AccentSoftBrush : Palette.SurfaceHoverBrush,
-            // Half the ~25px height — see Pill for why 999 draws an ellipse.
-            0, 12, 4, onClick, radius: 12,
-            weight: selected ? FontWeights.SemiBold : FontWeights.Normal);
+    /// <summary>
+    /// A stadium-shaped toggle chip — semicircle ends, straight middle.
+    /// Used for mutually exclusive picks like the language selector.
+    /// MinHeight and CornerRadius are kept numerically tied so WPF always
+    /// draws a true capsule instead of a rounded rectangle.
+    /// </summary>
+    public static Button Chip(string label, bool selected, Action onClick)
+    {
+        const double chipHeight = 28;
+        const double chipRadius = chipHeight / 2; // 14
+
+        var foreground = selected ? Palette.AccentInkBrush : Palette.TextSecondaryBrush;
+        var background = selected ? Palette.AccentSoftBrush : Palette.SurfaceAltBrush;
+        var hoverBackground = selected ? Palette.AccentSoftBrush : Palette.SurfaceHoverBrush;
+        var border = selected ? Faded(Palette.AccentInkBrush, 0.35) : Brushes.Transparent;
+
+        var button = new Button
+        {
+            Content = Text(label, 13, selected ? FontWeights.SemiBold : FontWeights.Normal, foreground),
+            MinHeight = chipHeight,
+            Padding = new Thickness(14, 0, 14, 0),
+            BorderThickness = new Thickness(1),
+            BorderBrush = border,
+            Background = background,
+            Cursor = System.Windows.Input.Cursors.Hand,
+            HorizontalContentAlignment = HorizontalAlignment.Center,
+            VerticalContentAlignment = VerticalAlignment.Center,
+        };
+
+        var template = new ControlTemplate(typeof(Button));
+        var capsule = new FrameworkElementFactory(typeof(Border));
+        capsule.Name = "bg";
+        capsule.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(Control.BackgroundProperty));
+        capsule.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(Control.BorderBrushProperty));
+        capsule.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(Control.BorderThicknessProperty));
+        capsule.SetValue(Border.CornerRadiusProperty, new CornerRadius(chipRadius));
+        var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+        presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Center);
+        presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, VerticalAlignment.Center);
+        capsule.AppendChild(presenter);
+        template.VisualTree = capsule;
+
+        var hover = new Trigger { Property = UIElement.IsMouseOverProperty, Value = true };
+        hover.Setters.Add(new Setter(Control.BackgroundProperty, hoverBackground));
+        template.Triggers.Add(hover);
+        var pressed = new Trigger { Property = Button.IsPressedProperty, Value = true };
+        pressed.Setters.Add(new Setter(Control.BackgroundProperty, hoverBackground));
+        template.Triggers.Add(pressed);
+
+        button.Template = template;
+        button.Click += (_, _) => onClick();
+        return button;
+    }
 
     /// <summary>
     /// The circular back button used by page headers: a hand-drawn vector

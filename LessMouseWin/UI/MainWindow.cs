@@ -25,6 +25,12 @@ public sealed class MainWindow : Window
     private const double ChromeHeight = 26;
 
     private readonly Action? _quitAction;
+    private enum TaskbarAnchor
+    {
+        Top,
+        Bottom,
+    }
+
     private PopupRoute _route = PopupRoute.Main;
     private string? _detailRuleId;
     private IPage? _page;
@@ -173,13 +179,79 @@ public sealed class MainWindow : Window
             // No visible scrollbar means the viewport width never changes;
             // keep the window at the designed 380 DIPs in every state.
             Width = Ui.PopupWidth;
-            Height = Math.Clamp(desiredHeight + ChromeHeight, 240, Ui.MaxPopupHeight);
+            var previousHeight = Height;
+            var previousTop = Top;
+            var newHeight = Math.Clamp(desiredHeight + ChromeHeight, 240, Ui.MaxPopupHeight);
+
             if (_repositionAfterFit && IsVisible)
             {
+                // First appearance: the tray anchor owns the position.
+                Height = newHeight;
                 _repositionAfterFit = false;
                 PositionNearTrayIcon();
             }
+            else
+            {
+                Height = newHeight;
+
+                // Subsequent size changes (for example a language switch)
+                // grow away from the taskbar instead of always downward:
+                // taskbar at the bottom -> keep the bottom edge fixed and
+                // expand upward; taskbar at the top -> keep the top edge
+                // fixed and expand downward.
+                if (IsVisible && !double.IsNaN(previousHeight) &&
+                    Math.Abs(Height - previousHeight) > 0.5)
+                {
+                    if (GetTaskbarAnchor() == TaskbarAnchor.Bottom)
+                    {
+                        Top = previousTop + previousHeight - Height;
+                    }
+                    ClampToWorkArea();
+                }
+            }
         });
+    }
+
+    /// <summary>
+    /// Detects which screen edge the taskbar occupies, using the tray icon
+    /// rectangle first (it lies on the taskbar itself) and the primary work
+    /// area as fallback.
+    /// </summary>
+    private TaskbarAnchor GetTaskbarAnchor()
+    {
+        var work = SystemParameters.WorkArea;
+        var scale = PresentationSource.FromVisual(this)?.CompositionTarget?.TransformToDevice.M11 ?? 1.0;
+        if (scale <= 0) scale = 1.0;
+
+        if (TrayIconRectProvider?.Invoke() is { } trayRect)
+        {
+            var top = trayRect.Top / scale;
+            var bottom = trayRect.Bottom / scale;
+            if (top >= work.Bottom - 4) return TaskbarAnchor.Bottom;
+            if (bottom <= work.Top + 4) return TaskbarAnchor.Top;
+
+            // Side taskbar (or auto-hidden taskbar): anchor vertically away
+            // from the half of the screen the tray icon sits in.
+            var centerY = (top + bottom) / 2.0;
+            return centerY >= work.Top + work.Height / 2.0
+                ? TaskbarAnchor.Bottom
+                : TaskbarAnchor.Top;
+        }
+
+        if (work.Bottom < SystemParameters.PrimaryScreenHeight - 1)
+            return TaskbarAnchor.Bottom;
+        if (work.Top > 0)
+            return TaskbarAnchor.Top;
+        return TaskbarAnchor.Bottom;
+    }
+
+    private void ClampToWorkArea()
+    {
+        var work = SystemParameters.WorkArea;
+        var maxLeft = Math.Max(work.Left + 8, work.Right - Width - 8);
+        var maxTop = Math.Max(work.Top + 8, work.Bottom - Height - 8);
+        Left = Math.Clamp(Left, work.Left + 8, maxLeft);
+        Top = Math.Clamp(Top, work.Top + 8, maxTop);
     }
 
     /// <summary>Called before Application.Shutdown so the popup's cancel-on-close doesn't block exit.</summary>
