@@ -13,6 +13,7 @@ public static class Palette
     private static Color _background;
     private static Color _surface;
     private static Color _surfaceAlt;
+    private static Color _surfaceHover;
     private static Color _border;
     private static Color _borderStrong;
     private static Color _text;
@@ -39,6 +40,7 @@ public static class Palette
     public static Brush BackgroundBrush => Frozen(_background);
     public static Brush SurfaceBrush => Frozen(_surface);
     public static Brush SurfaceAltBrush => Frozen(_surfaceAlt);
+    public static Brush SurfaceHoverBrush => Frozen(_surfaceHover);
     public static Brush BorderBrush => Frozen(_border);
     public static Brush BorderStrongBrush => Frozen(_borderStrong);
     public static Brush TextBrush => Frozen(_text);
@@ -68,13 +70,18 @@ public static class Palette
     public static void Reload()
     {
         IsDark = IsSystemDark();
+        // Values synced 1:1 with the macOS original's Theme.swift ("ink,
+        // signal green, and clean paper"). _surfaceHover is the only
+        // Windows-only addition — macOS rows give feedback on press, Windows
+        // users expect it on hover.
         if (IsDark)
         {
-            _background = Hex(0x070907);
-            _surface = Hex(0x151815);
-            _surfaceAlt = Hex(0x1D211D);
-            _border = Hex(0x2B312C);
-            _borderStrong = Hex(0x4B554C);
+            _background = Hex(0x0B0D0B);
+            _surface = Hex(0x141714);
+            _surfaceAlt = Hex(0x1C201C);
+            _surfaceHover = Hex(0x212621);
+            _border = Hex(0x272C28);
+            _borderStrong = Hex(0x3B423C);
             _text = Hex(0xF2F4F2);
             _textSecondary = Hex(0xC2C9C3);
             _textTertiary = Hex(0x838D85);
@@ -86,21 +93,22 @@ public static class Palette
             _inkHover = Hex(0xD9DDD9);
             _onInk = Hex(0x0B0D0B);
             _positive = Hex(0x4FE47A);
-            _positiveSoft = Hex(0x1D4A2A);
+            _positiveSoft = Hex(0x4FE47A, 0.25);
             _warning = Hex(0xEAB308);
-            _warningSoft = Hex(0x3A2F0A);
+            _warningSoft = Hex(0xEAB308, 0.25);
             _danger = Hex(0xF87171);
-            _dangerSoft = Hex(0x3E1A1A);
-            _moduleFill = Hex(0xFFFFFF, 0x08);
-            _moduleBorder = Hex(0xFFFFFF, 0x12);
+            _dangerSoft = Hex(0xF87171, 0.25);
+            _moduleFill = Hex(0xFFFFFF, 0.07);
+            _moduleBorder = Hex(0xFFFFFF, 0.10);
         }
         else
         {
-            _background = Hex(0xF3F5F3);
+            _background = Hex(0xF7F8F7);
             _surface = Hex(0xFFFFFF);
-            _surfaceAlt = Hex(0xE9ECE9);
-            _border = Hex(0xDCE1DC);
-            _borderStrong = Hex(0xB9C2BA);
+            _surfaceAlt = Hex(0xEFF1EF);
+            _surfaceHover = Hex(0xF1F3F1);
+            _border = Hex(0xE3E6E3);
+            _borderStrong = Hex(0xC6CCC7);
             _text = Hex(0x0B0F0C);
             _textSecondary = Hex(0x3E463F);
             _textTertiary = Hex(0x6D766E);
@@ -112,13 +120,13 @@ public static class Palette
             _inkHover = Hex(0x2A2F2A);
             _onInk = Hex(0xFFFFFF);
             _positive = Hex(0x128A38);
-            _positiveSoft = Hex(0x1E7A3B, 0x15);
+            _positiveSoft = Hex(0x128A38, 0.15);
             _warning = Hex(0xA16207);
-            _warningSoft = Hex(0xA16207, 0x15);
+            _warningSoft = Hex(0xA16207, 0.15);
             _danger = Hex(0xD92D20);
-            _dangerSoft = Hex(0xD92D20, 0x15);
-            _moduleFill = Hex(0xFFFFFF, 0x55);
-            _moduleBorder = Hex(0xFFFFFF, 0x65);
+            _dangerSoft = Hex(0xD92D20, 0.15);
+            _moduleFill = Hex(0xFFFFFF, 0.55);
+            _moduleBorder = Hex(0xFFFFFF, 0.65);
         }
     }
 

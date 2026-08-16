@@ -29,7 +29,7 @@ internal sealed class DetailPage : IPage
 
         if (rule is null)
         {
-            _root.Children.Add(Ui.PageHeader(Loc.T("suggestion.title"), "💡", onBack));
+            _root.Children.Add(Ui.PageHeader(Loc.T("suggestion.title"), "✦", onBack));
             _root.Children.Add(Ui.Text(Loc.T("suggestion.missing"), 13, FontWeights.Normal,
                 Palette.TextTertiaryBrush, TextWrapping.Wrap));
             _summaryText = Ui.Text("");
@@ -53,8 +53,10 @@ internal sealed class DetailPage : IPage
 
         // Body module.
         _bodyStack = new StackPanel { Margin = new Thickness(Ui.RowPadding) };
-        _bodyStack.Children.Add(Ui.Text(Loc.T(rule.BodyKey), 13, FontWeights.Normal,
-            Palette.TextSecondaryBrush, TextWrapping.Wrap));
+        var body = Ui.Text(Loc.T(rule.BodyKey), 13, FontWeights.Normal,
+            Palette.TextSecondaryBrush, TextWrapping.Wrap);
+        body.LineHeight = 18;
+        _bodyStack.Children.Add(body);
         _root.Children.Add(Ui.Module(_bodyStack));
 
         // Alternatives.
@@ -65,23 +67,25 @@ internal sealed class DetailPage : IPage
             for (var i = 1; i < rule.KeyCaps.Count; i++)
             {
                 alt.Children.Add(Ui.KeyCapRow(rule.KeyCaps[i],
-                    margin: new Thickness(Ui.RowPadding, 0, Ui.RowPadding, 10)));
+                    margin: new Thickness(Ui.RowPadding, 0, Ui.RowPadding, 8)));
             }
             _root.Children.Add(Ui.Module(alt));
         }
 
         // Actions.
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 6, 0, 0) };
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
         actions.Children.Add(Ui.AccentButton(Loc.T("common.knowIt"), () =>
         {
             _state.MarkRead(rule.Id);
             _onBack();
         }));
-        actions.Children.Add(Ui.SecondaryButton(Loc.T("common.neverAgain"), () =>
+        var dismiss = Ui.SecondaryButton(Loc.T("common.neverAgain"), () =>
         {
             _state.Dismiss(rule.Id);
             _onBack();
-        }));
+        });
+        dismiss.Margin = new Thickness(8, 0, 0, 0);
+        actions.Children.Add(dismiss);
         _root.Children.Add(actions);
 
         RefreshDynamic();

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Shapes;
 using LessMouseWin.Localization;
 using LessMouseWin.State;
@@ -19,7 +20,10 @@ internal sealed class MainPage : IPage
 
     private readonly TextBlock _headline;
     private readonly TextBlock _subline;
-    private readonly Ellipse _dot;
+    private readonly Grid _dot;
+    private readonly Ellipse _dotCore;
+    private readonly Ellipse _dotHalo;
+    private bool _pulsing;
     private readonly StackPanel _root;
     private readonly Border _celebrationModule;
     private readonly TextBlock _celebrationTitle;
@@ -45,45 +49,89 @@ internal sealed class MainPage : IPage
 
         _root = new StackPanel { Margin = new Thickness(Ui.Gutter) };
 
-        // Tracking header.
-        _dot = new Ellipse { Width = 8, Height = 8, VerticalAlignment = VerticalAlignment.Center };
-        _headline = Ui.Text(Loc.T("tracking.active"), 13, FontWeights.Normal);
+        // Tracking header: dot + headline + today's summary, the original's
+        // TrackingHeader. The dot is an 8pt core inside a 25% halo ring —
+        // a flat ring, not a blur; this panel spends no shadows. It breathes
+        // slowly while the hook is listening.
+        _dotCore = new Ellipse
+        {
+            Width = 8, Height = 8,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        _dotHalo = new Ellipse
+        {
+            Width = 14, Height = 14,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+        };
+        _dot = new Grid { Width = 14, Height = 14, VerticalAlignment = VerticalAlignment.Center };
+        _dot.Children.Add(_dotHalo);
+        _dot.Children.Add(_dotCore);
+        _headline = Ui.Text(Loc.T("tracking.active"), 15, FontWeights.SemiBold,
+            margin: new Thickness(2, 0, 0, 0));
         var headerLine = new StackPanel { Orientation = Orientation.Horizontal };
         headerLine.Children.Add(_dot);
-        var headlineWrap = new StackPanel { Margin = new Thickness(8, 0, 0, 0) };
-        headlineWrap.Children.Add(_headline);
+        headerLine.Children.Add(_headline);
+        // The subline sits under the headline, indented past the dot so the
+        // two lines of text share one left edge.
         _subline = Ui.Text("", 11, FontWeights.Normal, Palette.TextTertiaryBrush,
-            margin: new Thickness(0, 1, 0, 0));
-        headlineWrap.Children.Add(_subline);
-        headerLine.Children.Add(headlineWrap);
-        _root.Children.Add(new StackPanel { Children = { headerLine }, Margin = new Thickness(0, 6, 0, 8) });
+            margin: new Thickness(16, 2, 0, 0));
+        var headerStack = new StackPanel { Margin = new Thickness(0, 0, 0, 10) };
+        headerStack.Children.Add(headerLine);
+        headerStack.Children.Add(_subline);
+        _root.Children.Add(headerStack);
 
         // Failure warning (only visible when the hook cannot start).
         _failureText = Ui.Text("", 11, FontWeights.Normal, Palette.DangerBrush, TextWrapping.Wrap);
         var retry = Ui.SecondaryButton(Loc.T("tracking.retry"), () => _state.StartMonitor());
         var failureStack = Ui.VStack(4);
+        failureStack.Margin = new Thickness(Ui.RowPadding, 10, Ui.RowPadding, 10);
         failureStack.Children.Add(_failureText);
-        failureStack.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { retry } });
+        failureStack.Children.Add(new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Margin = new Thickness(0, 6, 0, 0),
+            Children = { retry },
+        });
         _failureModule = Ui.Module(failureStack);
+        _failureModule.Background = Palette.DangerSoftBrush;
+        _failureModule.BorderBrush = Palette.DangerBrush;
         _failureModule.Visibility = Visibility.Collapsed;
         _root.Children.Add(_failureModule);
 
-        // Celebration banner.
-        _celebrationTitle = Ui.Text("", 13, FontWeights.Normal, Palette.TextBrush);
-        _celebrationSub = Ui.Text("", 11, FontWeights.Normal, Palette.TextSecondaryBrush);
+        // Celebration banner — a plain module row whose green check disc is
+        // the whole celebration; no tinted card (the original spends the
+        // accent on the glyph, not the background).
+        _celebrationTitle = Ui.Text("", 13, FontWeights.Medium, Palette.TextBrush);
+        _celebrationSub = Ui.Text("", 11, FontWeights.Normal, Palette.TextTertiaryBrush,
+            margin: new Thickness(0, 2, 0, 0));
         var celebrationDismiss = Ui.QuietButton(Loc.T("common.knowIt"), () => _state.DismissCelebration());
-        var celebrationStack = Ui.VStack(2);
-        celebrationStack.Children.Add(_celebrationTitle);
-        celebrationStack.Children.Add(_celebrationSub);
-        celebrationStack.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Children = { celebrationDismiss } });
-        _celebrationModule = Ui.Module(celebrationStack);
+        var celebrationRow = new Grid { Margin = new Thickness(Ui.RowPadding, 8, Ui.RowPadding, 8) };
+        celebrationRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(Ui.GlyphSize) });
+        celebrationRow.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        celebrationRow.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var celebrationGlyph = Ui.Glyph("✓", true);
+        Grid.SetColumn(celebrationGlyph, 0);
+        celebrationRow.Children.Add(celebrationGlyph);
+        var celebrationText = new StackPanel { Margin = new Thickness(8, 0, 6, 0) };
+        celebrationText.Children.Add(_celebrationTitle);
+        celebrationText.Children.Add(_celebrationSub);
+        Grid.SetColumn(celebrationText, 1);
+        celebrationRow.Children.Add(celebrationText);
+        Grid.SetColumn(celebrationDismiss, 2);
+        celebrationDismiss.VerticalAlignment = VerticalAlignment.Center;
+        celebrationRow.Children.Add(celebrationDismiss);
+        _celebrationModule = Ui.Module(celebrationRow);
         _celebrationModule.Visibility = Visibility.Collapsed;
         _root.Children.Add(_celebrationModule);
 
-        // Today ledger.
-        _eventsValue = Ui.Mono("0", 13, FontWeights.Normal);
-        _patternsValue = Ui.Mono("0", 13, FontWeights.Normal);
-        _combosValue = Ui.Mono("0", 13, FontWeights.Normal);
+        // Today ledger: three rows, three numbers, all monospaced. Green is
+        // spent on the tracking dot above — these glyphs stay off, counts
+        // carry the screen.
+        _eventsValue = Ui.Mono("0", 15, FontWeights.SemiBold);
+        _patternsValue = Ui.Mono("0", 15, FontWeights.SemiBold);
+        _combosValue = Ui.Mono("0", 15, FontWeights.SemiBold);
         var today = Ui.Module(
             Ui.Row(Loc.T("today.events"), Loc.T("today.events.hint"), "⌨", false, _eventsValue),
             Ui.Divider(),
@@ -104,7 +152,7 @@ internal sealed class MainPage : IPage
 
         // Footer: stats and settings stay as a left group, quit is pushed to
         // the far right, with explicit gaps between all three actions.
-        var footer = new Grid { Margin = new Thickness(0, 8, 0, 0) };
+        var footer = new Grid { Margin = new Thickness(0, 2, 0, 0) };
         footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         footer.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -132,12 +180,15 @@ internal sealed class MainPage : IPage
     public void RefreshDynamic()
     {
         var phase = _state.Phase;
-        _dot.Fill = phase switch
+        var dotBrush = phase switch
         {
             TrackingPhase.Tracking => Palette.AccentBrush,
             TrackingPhase.Paused => Palette.TextTertiaryBrush,
             _ => Palette.WarningBrush,
         };
+        _dotCore.Fill = dotBrush;
+        _dotHalo.Fill = Ui.Faded(dotBrush, 0.25);
+        UpdatePulse(phase);
         _headline.Text = _state.TrackingHeadline;
 
         if (phase == TrackingPhase.HookFailed)
@@ -168,6 +219,34 @@ internal sealed class MainPage : IPage
         }
 
         RebuildInbox();
+    }
+
+    /// <summary>
+    /// The status dot breathes while the hook is listening — a slow opacity
+    /// pulse, stopped the moment tracking pauses or animations are off.
+    /// </summary>
+    private void UpdatePulse(TrackingPhase phase)
+    {
+        if (phase == TrackingPhase.Tracking && SystemParameters.ClientAreaAnimation)
+        {
+            if (_pulsing) return;
+            _pulsing = true;
+            _dot.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+            {
+                From = 1.0,
+                To = 0.45,
+                Duration = new Duration(TimeSpan.FromSeconds(1.6)),
+                AutoReverse = true,
+                RepeatBehavior = RepeatBehavior.Forever,
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut },
+            });
+        }
+        else if (_pulsing)
+        {
+            _pulsing = false;
+            _dot.BeginAnimation(UIElement.OpacityProperty, null);
+            _dot.Opacity = 1.0;
+        }
     }
 
     private void RebuildInbox()
@@ -210,23 +289,8 @@ internal sealed class MainPage : IPage
                 ? Ui.Pill(Loc.T("common.adopted"), Palette.PositiveBrush, Palette.PositiveSoftBrush)
                 : new Grid();
         var row = Ui.Row(Loc.T(rule.TitleKey), summary, rule.Symbol, status == SuggestionStatus.Unread, trailing);
-
-        var button = new Button
-        {
-            Content = row,
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(0),
-            HorizontalContentAlignment = HorizontalAlignment.Stretch,
-            Cursor = System.Windows.Input.Cursors.Hand,
-        };
-        var template = new ControlTemplate(typeof(Button));
-        var content = new FrameworkElementFactory(typeof(ContentPresenter));
-        content.SetValue(ContentPresenter.HorizontalAlignmentProperty, HorizontalAlignment.Stretch);
-        template.VisualTree = content;
-        button.Template = template;
         var ruleId = rule.Id;
-        button.Click += (_, _) => _openSuggestion(ruleId);
-        return button;
+        return Ui.Hoverable(row, () => _openSuggestion(ruleId));
     }
 
     private string Summary(SuggestionRule rule)

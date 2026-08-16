@@ -82,7 +82,7 @@ internal sealed class SettingsPage : IPage
         var showButton = Ui.QuietButton(Loc.T("settings.showData"), TrayIconService.OpenDataFolder);
         var data = new StackPanel();
         data.Children.Add(Ui.TitleRow(Loc.T("settings.data")));
-        data.Children.Add(Ui.Row(Loc.T("settings.dataLocation"), null, "🗀", false, showButton, _storagePath));
+        data.Children.Add(Ui.Row(Loc.T("settings.dataLocation"), null, "▦", false, showButton, _storagePath));
         data.Children.Add(Ui.Divider());
 
         _eraseSubtitle = Ui.Text(Loc.T("settings.eraseAll.hint"), 11, FontWeights.Normal,
@@ -99,7 +99,7 @@ internal sealed class SettingsPage : IPage
             _state.EraseAllData();
             RefreshEraseRow();
         });
-        var eraseRow = Ui.Row(Loc.T("settings.eraseAll"), "", "🗑", false, _eraseButton, _eraseSubtitle,
+        var eraseRow = Ui.Row(Loc.T("settings.eraseAll"), "", "⌫", false, _eraseButton, _eraseSubtitle,
             subtitleWrap: TextWrapping.Wrap);
         // Replace the subtitle text in the constructed row.
         if (eraseRow.Children[1] is StackPanel eraseText && eraseText.Children.Count > 1)
@@ -159,13 +159,8 @@ internal sealed class SettingsPage : IPage
 
     private Button LanguageChip(string label, string? code)
     {
-        var selected = Loc.Override == code;
-        var text = (selected ? "✓ " : "") + label;
-        var button = selected
-            ? Ui.SecondaryButton(text, () => SetLanguage(code))
-            : Ui.QuietButton(text, () => SetLanguage(code));
-        button.Padding = new Thickness(12, 5, 12, 5);
-        return button;
+        // Selection is carried by the accent capsule itself, no "✓" prefix.
+        return Ui.Chip(label, Loc.Override == code, () => SetLanguage(code));
     }
 
     private void SetLanguage(string? code)

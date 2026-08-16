@@ -69,7 +69,8 @@ public sealed class MainWindow : Window
         _surface = new Border
         {
             Background = Palette.BackgroundBrush,
-            BorderBrush = Palette.BorderStrongBrush,
+            // Hairline edge only — the shadow does the separation work.
+            BorderBrush = Palette.BorderBrush,
             BorderThickness = new Thickness(1),
             CornerRadius = new CornerRadius(16),
             Effect = shadow,
@@ -129,7 +130,7 @@ public sealed class MainWindow : Window
     public void RebuildPage()
     {
         _surface.Background = Palette.BackgroundBrush;
-        _surface.BorderBrush = Palette.BorderStrongBrush;
+        _surface.BorderBrush = Palette.BorderBrush;
         BuildPage();
     }
 
